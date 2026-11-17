@@ -1,0 +1,192 @@
+name: ${COMPOSE_PROJECT_NAME:-curralzap-local}
+
+services:
+  postgres:
+    build:
+      context: ../docker/postgres
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-curralzap}
+      POSTGRES_USER: ${POSTGRES_USER:-curralzap}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-curralzap}
+      EVOLUTION_POSTGRES_DB: ${EVOLUTION_POSTGRES_DB:-curralzap_evolution}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-curralzap} -d ${POSTGRES_DB:-curralzap}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  kafka:
+    image: apache/kafka:4.0.2
+    hostname: kafka
+    restart: unless-stopped
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    environment:
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: PLAINTEXT://:19092,CONTROLLER://:9093,PLAINTEXT_HOST://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9092}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "${KAFKA_UI_PORT:-8085}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${EVOLUTION_API_PORT:-8088}:8080"
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://localhost:8088}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:-change-me}
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-curralzap}:${POSTGRES_PASSWORD:-curralzap}@postgres:5432/${EVOLUTION_POSTGRES_DB:-curralzap_evolution}
+      DATABASE_CONNECTION_CLIENT_NAME: evolution_api
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_LOCAL_ENABLED: "false"
+      CONFIG_SESSION_PHONE_VERSION: "2.3000.1020885143"
+    volumes:
+      - evolution_instances:/evolution/instances
+
+  backend-api:
+    build:
+      context: ../../apps/backend
+      dockerfile: Dockerfile
+      target: api-runtime
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "${BACKEND_API_PORT:-8080}:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-curralzap}
+      DB_DRIVER_CLASS_NAME: org.postgresql.Driver
+      DB_USERNAME: ${POSTGRES_USER:-curralzap}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-curralzap}
+      JWT_SECRET: ${JWT_SECRET:-change-me-local-jwt-secret}
+      MAGIC_LINK_BASE_URL: ${MAGIC_LINK_BASE_URL:-http://localhost:8081/auth/callback?token=}
+      API_CORS_ALLOWED_ORIGINS: ${API_CORS_ALLOWED_ORIGINS:-http://localhost:8081}
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      EVOLUTION_BASE_URL: http://evolution-api:8080
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-change-me}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      WHATSAPP_WEBHOOK_SECRET: ${WHATSAPP_WEBHOOK_SECRET:-change-me-local-whatsapp-webhook-secret}
+      FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/local
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/internal/readiness >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+
+  backend-worker:
+    build:
+      context: ../../apps/backend
+      dockerfile: Dockerfile
+      target: worker-runtime
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-curralzap}
+      DB_DRIVER_CLASS_NAME: org.postgresql.Driver
+      DB_USERNAME: ${POSTGRES_USER:-curralzap}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-curralzap}
+      JWT_SECRET: ${JWT_SECRET:-change-me-local-jwt-secret}
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      EVOLUTION_BASE_URL: http://evolution-api:8080
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-change-me}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8081/internal/readiness >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 25s
+
+  admin-web:
+    profiles: ["web"]
+    build:
+      context: ../..
+      dockerfile: apps/admin-web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend-api:
+        condition: service_healthy
+    ports:
+      - "${ADMIN_WEB_PORT:-8081}:80"
+    environment:
+      CURRALZAP_API_BASE_URL: ${ADMIN_WEB_API_BASE_URL:-http://localhost:8080}
+
+volumes:
+  evolution_instances:
+  kafka_data:
+  postgres_data:
+  redis_data:

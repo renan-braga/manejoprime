@@ -1,0 +1,16 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+COPY apps/admin-web/package.json ./apps/admin-web/
+RUN npm ci
+# Alpine uses musl libc — install the matching Rollup native binding
+RUN npm install --no-save @rollup/rollup-linux-x64-musl@$(node -p "require('./node_modules/rollup/package.json').version")
+COPY . .
+RUN npm run storybook:build --workspace @curralzap/admin-web
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/apps/admin-web/storybook-static ./storybook-static
+RUN npm install -g serve
+EXPOSE 3000
+CMD ["sh", "-c", "serve storybook-static -l ${PORT:-3000}"]

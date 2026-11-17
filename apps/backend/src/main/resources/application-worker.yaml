@@ -1,0 +1,11 @@
+server:
+  address: 127.0.0.1
+  port: ${SERVER_PORT:8081}
+
+spring:
+  main:
+    keep-alive: true
+
+curralzap:
+  runtime:
+    role: worker

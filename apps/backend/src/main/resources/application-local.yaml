@@ -1,0 +1,96 @@
+server:
+  address: 127.0.0.1
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:curralzap_local;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  flyway:
+    enabled: true
+    locations: classpath:db/migration,classpath:db/local
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+curralzap:
+  ops:
+    api-key: curralzap-local-ops-dev-key
+  api:
+    cors:
+      allowed-origins: http://localhost:5173,http://127.0.0.1:5173,http://localhost:8081,http://127.0.0.1:8081,http://localhost:4173,http://127.0.0.1:4173
+  auth:
+    magic-link:
+      base-url: http://localhost:5173/auth/callback?token=
+    jwt:
+      secret: curralzap-local-dev-auth-secret-change-me-1234567890
+      access-token-ttl: PT8H
+  oauth:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+    facebook:
+      client-id: ${FACEBOOK_CLIENT_ID:}
+      client-secret: ${FACEBOOK_CLIENT_SECRET:}
+    microsoft:
+      client-id: ${MICROSOFT_CLIENT_ID:}
+      client-secret: ${MICROSOFT_CLIENT_SECRET:}
+  asaas:
+    webhook-token: ${ASAAS_WEBHOOK_TOKEN:}
+    api-key: ${ASAAS_API_KEY:}
+    base-url: ${ASAAS_BASE_URL:https://sandbox.asaas.com/api/v3}
+  whatsapp:
+    audio:
+      storage-root: ${WHATSAPP_AUDIO_STORAGE_ROOT:}
+    webhook:
+      secret: curralzap-local-dev-whatsapp-webhook-secret
+    kafka:
+      retry:
+        dead-letter-suffix: .dlt
+        interval-ms: 1000
+        max-attempts: 3
+      consumer-groups:
+        audio-download: ${WHATSAPP_AUDIO_DOWNLOAD_CONSUMER_GROUP:curralzap-whatsapp-audio-download}
+        audio-transcode: ${WHATSAPP_AUDIO_TRANSCODE_CONSUMER_GROUP:curralzap-whatsapp-audio-transcode}
+        audio-transcription: ${WHATSAPP_AUDIO_TRANSCRIPTION_CONSUMER_GROUP:curralzap-whatsapp-audio-transcription}
+        outbound-delivery: ${WHATSAPP_OUTBOUND_DELIVERY_CONSUMER_GROUP:curralzap-whatsapp-outbound-delivery}
+        payload-validation: ${WHATSAPP_PAYLOAD_VALIDATION_CONSUMER_GROUP:curralzap-whatsapp-payload-validation}
+        transcript-extraction: ${WHATSAPP_TRANSCRIPT_EXTRACTION_CONSUMER_GROUP:curralzap-whatsapp-transcript-extraction}
+        button-confirmation: ${WHATSAPP_BUTTON_CONFIRMATION_CONSUMER_GROUP:curralzap-whatsapp-button-confirmation}
+      topics:
+        audio-transcode-requested: whatsapp.audio.transcode.requested
+        audio-transcription-requested: whatsapp.audio.transcription.requested
+        message-received: whatsapp.message.received
+        outbound-delivery-requested: whatsapp.outbound.delivery.requested
+        payload-validation-requested: whatsapp.payload.validation.requested
+        transcript-extraction-requested: whatsapp.transcript.extraction.requested
+        button-confirmation-requested: whatsapp.button.confirmation.requested
+    evolution:
+      api-key: ${EVOLUTION_API_KEY:}
+      base-url: ${EVOLUTION_BASE_URL:http://localhost:8080}
+      instance: ${EVOLUTION_INSTANCE:curralzap}
+      message-delay-ms: ${EVOLUTION_MESSAGE_DELAY_MS:0}
+    validation:
+      free-tier-daily-weighing-limit: ${WHATSAPP_FREE_TIER_DAILY_WEIGHING_LIMIT:10}
+    extraction:
+      openai:
+        api-key: ${OPENAI_API_KEY:}
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        model: ${WHATSAPP_TRANSCRIPT_EXTRACTION_MODEL:gpt-5.4-mini}
+    transcription:
+      openai:
+        api-key: ${OPENAI_API_KEY:}
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        model: ${WHATSAPP_AUDIO_TRANSCRIPTION_MODEL:gpt-4o-mini-transcribe}

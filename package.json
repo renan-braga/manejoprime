@@ -1,0 +1,13 @@
+{
+  "name": "curralzap",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "test:admin-web": "npm run test --workspace @curralzap/admin-web",
+    "storybook": "npm run storybook --workspace @curralzap/admin-web",
+    "storybook:build": "npm run storybook:build --workspace @curralzap/admin-web"
+  }
+}

@@ -1,0 +1,33 @@
+{
+	email {$TLS_ACME_EMAIL}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+{$PUBLIC_ADMIN_DOMAIN} {
+	import security_headers
+	encode zstd gzip
+
+	@backend_paths path /api /api/* /internal /internal/*
+	respond @backend_paths 404
+
+	reverse_proxy admin-web:80
+}
+
+{$PUBLIC_API_DOMAIN} {
+	import security_headers
+	encode zstd gzip
+
+	@internal_paths path /internal /internal/*
+	respond @internal_paths 404
+
+	reverse_proxy backend-api:8080
+}

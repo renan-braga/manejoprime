@@ -1,0 +1,6 @@
+window.CURRALZAP_RUNTIME_CONFIG = Object.freeze({
+  apiBaseUrl: "${CURRALZAP_API_BASE_URL}",
+  googleClientId: "${CURRALZAP_GOOGLE_CLIENT_ID}",
+  facebookAppId: "${CURRALZAP_FACEBOOK_APP_ID}",
+  microsoftClientId: "${CURRALZAP_MICROSOFT_CLIENT_ID}"
+});

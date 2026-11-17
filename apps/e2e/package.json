@@ -1,0 +1,22 @@
+{
+  "name": "@curralzap/e2e",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:api": "playwright test tests/00-auth tests/01-farms tests/02-lots tests/03-animals tests/04-weighings tests/05-health tests/06-feeding tests/07-offers tests/08-users tests/09-dashboard",
+    "test:whatsapp": "playwright test tests/10-whatsapp",
+    "test:ui": "playwright test tests/11-ui",
+    "generate-audio": "ts-node scripts/generate-audio-fixtures.ts",
+    "report": "allure generate allure-results -o allure-report --clean && allure open allure-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^22.20.0",
+    "allure-commandline": "^2.43.0",
+    "allure-js-commons": "^3.10.2",
+    "allure-playwright": "^3.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

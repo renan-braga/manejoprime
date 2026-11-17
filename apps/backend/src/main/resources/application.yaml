@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: curralzap-backend
+
+curralzap:
+  plan-limits:
+    free: 50
+    starter: 500
+    pro: 2000
+    business: -1
+    enterprise: -1
+    internal: -1

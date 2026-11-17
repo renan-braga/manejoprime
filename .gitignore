@@ -1,0 +1,61 @@
+# Segredos e variáveis de ambiente (use infra/env/*.env.example como modelo)
+.env
+.env.*
+!.env.example
+.envrc
+infra/env/*.env
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+
+# Instruções de agentes de IA, planejamento e docs internos (uso local)
+CLAUDE.md
+AGENTS.md
+.claude/
+tasks/
+docs/planning/
+docs/guidelines/
+docs/reference/legacy/
+
+# Dependências e builds
+node_modules/
+dist/
+build/
+target/
+.gradle/
+*.tsbuildinfo
+apps/mobile/.expo/
+apps/mobile/dist-web/
+apps/admin-web/storybook-static/
+
+# Testes e cobertura
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Artefatos Java
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+hs_err_pid*
+replay_pid*
+
+# Arquivos compactados / dumps de banco
+*.zip
+*.tar.gz
+*.rar
+*.dump
+*.sql.gz
+
+# Logs
+*.log
+
+# Editor / SO
+.idea/
+.vscode/
+.DS_Store

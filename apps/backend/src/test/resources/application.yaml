@@ -1,0 +1,68 @@
+curralzap:
+  ops:
+    api-key: curralzap-test-ops-key
+  auth:
+    jwt:
+      secret: curralzap-test-auth-secret-1234567890
+  whatsapp:
+    audio:
+      storage-root: ${java.io.tmpdir}/curralzap-test-whatsapp-audio
+    webhook:
+      secret: curralzap-test-whatsapp-webhook-secret
+    kafka:
+      retry:
+        dead-letter-suffix: .dlt
+        interval-ms: 0
+        max-attempts: 3
+      consumer-groups:
+        audio-download: curralzap-test-whatsapp-audio-download
+        audio-transcode: curralzap-test-whatsapp-audio-transcode
+        audio-transcription: curralzap-test-whatsapp-audio-transcription
+        outbound-delivery: curralzap-test-whatsapp-outbound-delivery
+        payload-validation: curralzap-test-whatsapp-payload-validation
+        transcript-extraction: curralzap-test-whatsapp-transcript-extraction
+        button-confirmation: curralzap-test-whatsapp-button-confirmation
+      topics:
+        audio-transcode-requested: whatsapp.audio.transcode.requested.test
+        audio-transcription-requested: whatsapp.audio.transcription.requested.test
+        message-received: whatsapp.message.received.test
+        outbound-delivery-requested: whatsapp.outbound.delivery.requested.test
+        payload-validation-requested: whatsapp.payload.validation.requested.test
+        transcript-extraction-requested: whatsapp.transcript.extraction.requested.test
+        button-confirmation-requested: whatsapp.button.confirmation.requested.test
+    evolution:
+      api-key: test-evolution-key
+      base-url: http://localhost:18081
+      instance: curralzap-test
+      message-delay-ms: 0
+    validation:
+      free-tier-daily-weighing-limit: 10
+    extraction:
+      openai:
+        api-key: test-openai-key
+        base-url: http://localhost:18080
+        model: gpt-5.4-mini
+    transcription:
+      openai:
+        api-key: test-openai-key
+        base-url: http://localhost:18080
+        model: gpt-4o-mini-transcribe
+
+spring:
+  kafka:
+    admin:
+      auto-create: false
+    bootstrap-servers: localhost:29092
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: br.com.curralzap.backend.whatsapp.application
+        spring.json.use.type.headers: false
+    listener:
+      auto-startup: false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
